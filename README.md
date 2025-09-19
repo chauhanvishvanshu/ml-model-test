@@ -15,6 +15,7 @@ cmlre_full_project/
 │── requirements.txt
 │── analysis.ipynb # Jupyter notebook (exploration & training)
 │── cmlre_biodiversity_data_sample.csv
+│── model.pkl
 │
 ├── backend/
 │ ├── app.py # Flask API
@@ -26,6 +27,7 @@ cmlre_full_project/
 ├── index.html # UI (form to submit data)
 ├── style.css
 └── script.js
+
 
 yaml
 Copy code
