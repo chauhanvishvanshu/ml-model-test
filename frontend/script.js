@@ -1,14 +1,19 @@
-document.getElementById('predictForm').addEventListener('submit', async function(e) {
+const form = document.getElementById('predictForm');
+const resultEl = document.getElementById('result');
+const predictBtn = form.querySelector('button[type="submit"]');
+
+form.addEventListener('submit', async (e) => {
   e.preventDefault();
+  predictBtn.disabled = true;
+  predictBtn.textContent = "Predicting...";
 
   const species = document.getElementById('species').value;
-  const count = document.getElementById('count').value;
-  const length = document.getElementById('length').value;
+  const count = +document.getElementById('count').value;
+  const length_cm = +document.getElementById('length').value;
 
-  const payload = { species, count, length_cm: length };
+  const payload = { species, count, length_cm };
 
-  const resultDiv = document.getElementById('result');
-  resultDiv.textContent = '⏳ Predicting...';
+  resultEl.textContent = "⏳ Waiting for prediction…";
 
   try {
     const res = await fetch('http://127.0.0.1:5000/predict', {
@@ -16,15 +21,16 @@ document.getElementById('predictForm').addEventListener('submit', async function
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-
     const data = await res.json();
-
     if (res.ok) {
-      resultDiv.textContent = `✅ Predicted Size Class: ${data.predicted_size_class}`;
+      resultEl.textContent = `✅ Predicted Size Class: ${data.predicted_size_class}`;
     } else {
-      resultDiv.textContent = `❌ Error: ${data.error || JSON.stringify(data)}`;
+      resultEl.textContent = `❌ Error: ${data.error || "Something went wrong"}`;
     }
   } catch (err) {
-    resultDiv.textContent = '❌ Request failed — is the Flask backend running?';
+    resultEl.textContent = "❌ Request failed — is the backend running?";
+  } finally {
+    predictBtn.disabled = false;
+    predictBtn.textContent = "Predict";
   }
 });

@@ -1,7 +1,12 @@
-from flask import Flask, request, jsonify, render_template_string
+from flask import Flask, request, jsonify, send_from_directory
 import joblib, os
 
-app = Flask(__name__)
+# Tell Flask where the frontend lives (../frontend from backend/)
+app = Flask(
+    __name__,
+    static_folder=os.path.join(os.path.dirname(__file__), "../frontend"),
+    static_url_path=""
+)
 
 # Load trained model and label encoder safely
 try:
@@ -11,48 +16,15 @@ except Exception as e:
     model, le = None, None
     print(f"⚠️ Failed to load model/encoder: {e}")
 
-# HTML form
-html_form = """
-<!doctype html>
-<html>
-<head><title>Fish Size Predictor</title></head>
-<body>
-<h2>Fish Size Class Predictor</h2>
-<form method="post" action="/predict_form">
-Species: <input type="text" name="species"><br><br>
-Count: <input type="number" name="count"><br><br>
-Length (cm): <input type="number" step="0.1" name="length_cm"><br><br>
-<button type="submit">Predict</button>
-</form>
-{% if prediction is not none %}
-<h3>Predicted Size Class: {{ prediction }}</h3>
-{% endif %}
-</body>
-</html>
-"""
 
-@app.route("/", methods=["GET"])
-def home():
-    return render_template_string(html_form, prediction=None)
+# === FRONTEND ROUTES ===
+@app.route("/")
+def serve_index():
+    """Serve the frontend index.html"""
+    return send_from_directory(app.static_folder, "index.html")
 
-@app.route("/predict_form", methods=["POST"])
-def predict_form():
-    if not model or not le:
-        return "❌ Model or encoder not loaded!"
-    try:
-        species = request.form["species"]
-        count = float(request.form["count"])
-        length_cm = float(request.form["length_cm"])
 
-        if species not in le.classes_:
-            return f"❌ Unknown species: {species}"
-
-        species_encoded = le.transform([species])[0]
-        prediction = model.predict([[species_encoded, count, length_cm]])[0]
-        return render_template_string(html_form, prediction=int(prediction))
-    except Exception as e:
-        return f"Error: {str(e)}"
-
+# === API ROUTES ===
 @app.route("/predict", methods=["POST"])
 def predict_api():
     if not model or not le:
@@ -69,6 +41,13 @@ def predict_api():
         return jsonify({"predicted_size_class": int(prediction)})
     except Exception as e:
         return jsonify({"error": str(e)}), 400
+
+
+# Allow serving static files (style.css, script.js, etc.)
+@app.route("/<path:path>")
+def serve_static_files(path):
+    return send_from_directory(app.static_folder, path)
+
 
 if __name__ == "__main__":
     app.run(debug=True)
